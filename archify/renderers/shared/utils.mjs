@@ -1,3 +1,4 @@
+import { renderGridPattern } from './svg-grid.mjs';
 import {
   escapeHtml as esc,
   localizeTemplate,
@@ -23,9 +24,7 @@ export function renderDefinitions() {
           <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" class="m-dashed" />
           </marker>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" class="c-grid" stroke-width="0.5"/>
-          </pattern>
+          ${renderGridPattern()}
         </defs>`;
 }
 
@@ -132,6 +131,7 @@ export function applyTemplate(template, {
   visualPreset = 'classic',
   guidedViews = [],
   sourceEvidence = null,
+  intervalData = null,
 }) {
   if (!SVG_SLOT_RE.test(template)) {
     throw new Error('applyTemplate: template missing ARCHIFY:SVG_SLOT sentinel');
@@ -167,7 +167,13 @@ export function applyTemplate(template, {
   const templateWithI18n = localizedTemplate.includes(I18N_PLACEHOLDER)
     ? localizedTemplate.replace(I18N_PLACEHOLDER, () => i18nData)
     : localizedTemplate.replace(GUIDED_VIEWS_PLACEHOLDER, () => `${i18nData}\n    ${GUIDED_VIEWS_PLACEHOLDER}`);
+  if (intervalData && !templateWithI18n.includes('<!-- ARCHIFY:INTERVAL_DATA -->')) {
+    throw new Error('applyTemplate: interval editing requires the interval data slot');
+  }
   return templateWithI18n
+    .replace(/^[ \t]*<!-- ARCHIFY:INTERVAL_DATA -->/m, () => intervalData
+      ? `<script id="archify-interval-data" type="application/json">${serializeScriptJson(intervalData)}</script>`
+      : '')
     .replace(TEMPLATE_PLACEHOLDERS[0], () => `<html lang="${esc(resolvedLocale)}" data-theme="dark" data-preset="${esc(visualPreset)}">`)
     .replace(TEMPLATE_PLACEHOLDERS[1], () => `<title>${esc(translateMessage(resolvedLocale, 'page.title', { title }))}</title>`)
     .replace(TEMPLATE_PLACEHOLDERS[2], () => `<h1>${esc(title)}</h1>`)

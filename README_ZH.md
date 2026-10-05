@@ -1,3 +1,5 @@
+> **Tracks fork:** This fork adds aligned Tracks diagrams (`interval`) to Archify. Use Tracks when position, length, overlap, or alignment across lanes matters: timing, concurrent activity, memory/storage layouts, or multiple segmentations of one range. State whether X means measured time, addresses/indices, or illustrative order. Use sequence diagrams for messages and workflows for process branches. Start with the [Tracks setup and usage guide](TRACKS.md) and [authoring reference](archify/references/interval-tracks.md). This is a development fork; the new type is not yet accepted upstream.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/archify-lockup-dark.svg" />
@@ -415,6 +417,10 @@ node bin/archify.mjs deliver workflow examples/agent-tool-call.workflow.json /tm
 欢迎提交 Issue、Pull Request 和真实场景图。请先阅读[贡献指南](CONTRIBUTING.md)；遇到问题时使用可复现 Bug 表单，也可以通过[社区 Showcase 表单](https://github.com/tt-a1i/archify/issues/new?template=showcase.yml)提交已验证成品。
 
 较大的功能或行为调整请先通过 Issue 对齐价值、兼容边界和非目标，再基于最新 `main` 开发。一个 PR 尽量只解决一个问题；核心代码和回归测试先行，生成物最后统一重建。Archify 坚持 Agent-first，优先完善稳定的机器可读诊断和现有权威合同，避免新增容易与 CLI 漂移的重复说明。&nbsp;·&nbsp;[LINUX&nbsp;DO](https://linux.do)
+
+## 区间轨道图
+
+使用 `interval` 绘制共享数值坐标轴的分层区间。输入格式、标准验证和 JSON 编辑器说明见[区间轨道指南](archify/references/interval-tracks.md)。
 
 ## Star History
 

@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const schemasDir = path.join(root, 'schemas');
 const output = path.join(root, 'renderers/shared/generated-validators.mjs');
-const diagramTypes = ['workflow', 'sequence', 'dataflow', 'lifecycle', 'architecture'];
+const diagramTypes = ['workflow', 'sequence', 'dataflow', 'lifecycle', 'architecture', 'interval'];
 
 const ajv = new Ajv2020({
   allErrors: true,
@@ -49,6 +49,19 @@ if (validatorCode.includes('require(')) {
   throw new Error('AJV standalone output contains an unexpected runtime dependency');
 }
 const generated = `${banner}${validatorCode}\n`;
+// The interval editor validates the same schema before accepting browser edits.
+// Build only that validator for the Viewer, without shipping AJV at runtime.
+const intervalCode = standaloneCode(ajv, { validateInterval: schemaIds.interval })
+  .replaceAll(ajvUcs2Import, inlineUcs2Length)
+  .replace('export const validateInterval =', 'const validateInterval =');
+if (intervalCode.includes('require(') || /\bexport\s/.test(intervalCode)) {
+  throw new Error('Browser interval validator contains an unresolved module dependency');
+}
+const outputs = [
+  [output, generated],
+  [path.join(root, 'renderers/interval/interval-validator.js'), `${banner}${intervalCode}\n`],
+];
+for (const [output, generated] of outputs) {
 
 if (process.argv.includes('--check')) {
   const current = fs.existsSync(output)
@@ -63,4 +76,6 @@ if (process.argv.includes('--check')) {
   fs.writeFileSync(temporary, generated);
   fs.renameSync(temporary, output);
   console.log(`generated ${path.relative(root, output)}`);
+}
+
 }

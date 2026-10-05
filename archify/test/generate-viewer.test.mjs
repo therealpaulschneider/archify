@@ -20,20 +20,32 @@ const lensMarker = '/* ARCHIFY:SEMANTIC_LENS */';
 const routeMarker = '/* ARCHIFY:ROUTE_PROBE */';
 const focusMarker = '/* ARCHIFY:FOCUS */';
 const guidedMarker = '/* ARCHIFY:GUIDED_VIEWS */';
-const fragments = { export: exportMarker, reader: marker, cleanup: cleanupMarker, chrome: chromeMarker, camera: cameraMarker, radar: radarMarker, motion: motionMarker, finder: finderMarker, intent: intentMarker, lens: lensMarker, route: routeMarker, guided: guidedMarker, focus: focusMarker };
+const intervalLayoutMarker = '/* ARCHIFY:INTERVAL_LAYOUT */';
+const intervalValidatorMarker = '/* ARCHIFY:INTERVAL_VALIDATOR */';
+const intervalEditorMarker = '/* ARCHIFY:INTERVAL_EDITOR */';
+const fragments = { intervalLayout: intervalLayoutMarker, intervalValidator: intervalValidatorMarker, intervalEditor: intervalEditorMarker, export: exportMarker, reader: marker, cleanup: cleanupMarker, chrome: chromeMarker, camera: cameraMarker, radar: radarMarker, motion: motionMarker, finder: finderMarker, intent: intentMarker, lens: lensMarker, route: routeMarker, guided: guidedMarker, focus: focusMarker };
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-viewer-build-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.mkdirSync(path.join(root, 'scripts'));
   fs.mkdirSync(path.join(root, 'archify/assets'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'archify/renderers/interval'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'archify/renderers/shared'), { recursive: true });
+  fs.copyFileSync(path.join(repoRoot, 'archify/renderers/shared/svg-grid.mjs'), path.join(root, 'archify/renderers/shared/svg-grid.mjs'));
   fs.cpSync(path.join(repoRoot, 'viewer'), path.join(root, 'viewer'), { recursive: true });
+  for (const name of ['interval-layout.mjs', 'interval-validator.js']) {
+    fs.copyFileSync(path.join(repoRoot, 'archify/renderers/interval', name), path.join(root, 'archify/renderers/interval', name));
+  }
   fs.copyFileSync(path.join(repoRoot, 'scripts/generate-viewer.mjs'), path.join(root, 'scripts/generate-viewer.mjs'));
   const output = path.join(root, 'archify/assets/template.html');
   fs.copyFileSync(path.join(repoRoot, 'archify/assets/template.html'), output);
   return {
     root, output,
     shell: path.join(root, 'viewer/template.source.html'),
+    intervalLayout: path.join(root, 'archify/renderers/interval/interval-layout.mjs'),
+    intervalValidator: path.join(root, 'archify/renderers/interval/interval-validator.js'),
+    intervalEditor: path.join(root, 'viewer/interval-editor.js'),
     export: path.join(root, 'viewer/export.js'),
     reader: path.join(root, 'viewer/reader-layout.js'),
     cleanup: path.join(root, 'viewer/export-cleanup.js'),
@@ -69,7 +81,7 @@ test('the committed Viewer rebuilds deterministically outside the repository wor
 
 test('editing any authoritative source requires explicit regeneration', (t) => {
   const f = fixture(t);
-  for (const input of [f.shell, f.export, f.reader, f.cleanup, f.chrome, f.camera, f.radar, f.motion, f.finder, f.intent, f.lens, f.route, f.guided, f.focus]) {
+  for (const input of [f.shell, f.intervalLayout, f.intervalValidator, f.intervalEditor, f.export, f.reader, f.cleanup, f.chrome, f.camera, f.radar, f.motion, f.finder, f.intent, f.lens, f.route, f.guided, f.focus]) {
     const previous = fs.readFileSync(f.output);
     fs.appendFileSync(input, '\n/* source change */\n');
     const stale = f.run('--check');
@@ -107,7 +119,7 @@ for (const [fragment, slot] of Object.entries(fragments)) {
       for (const args of [[], ['--check']]) {
         const result = f.run(...args);
         assert.equal(result.status, 1, failure);
-        assert.match(result.stderr, /ENOENT|marker|empty/);
+        assert.match(result.stderr, /ENOENT|marker|empty|export changed/);
         assert.deepEqual(fs.readFileSync(f.output), previous);
         assert.deepEqual(fs.readdirSync(path.dirname(f.output)), ['template.html']);
       }
@@ -118,7 +130,12 @@ for (const [fragment, slot] of Object.entries(fragments)) {
 test('assembly preserves literal replacement tokens, Unicode and source line endings', (t) => {
   const f = fixture(t);
   const reader = '// $& $\' $` $$ 中文 \u{1f5fa}\r\n(function () {})();\r\n';
-  fs.writeFileSync(f.shell, `<script>\r\n${focusMarker}${guidedMarker}${routeMarker}${lensMarker}${intentMarker}${finderMarker}${motionMarker}${radarMarker}${cameraMarker}${chromeMarker}${exportMarker}${marker}</script>\n`);
+  const layout = `export function renderIntervalLayout() { return '<svg/>'; }\r\n${reader}`;
+  const validator = `const validateInterval = () => true;\r\n${reader}`;
+  fs.writeFileSync(f.shell, `<script>\r\n${intervalLayoutMarker}${intervalValidatorMarker}${intervalEditorMarker}${focusMarker}${guidedMarker}${routeMarker}${lensMarker}${intentMarker}${finderMarker}${motionMarker}${radarMarker}${cameraMarker}${chromeMarker}${exportMarker}${marker}</script>\n`);
+  fs.writeFileSync(f.intervalLayout, layout);
+  fs.writeFileSync(f.intervalValidator, validator);
+  fs.writeFileSync(f.intervalEditor, reader);
   fs.writeFileSync(f.export, reader + cleanupMarker);
   fs.writeFileSync(f.cleanup, reader);
   fs.writeFileSync(f.chrome, reader);
@@ -133,7 +150,10 @@ test('assembly preserves literal replacement tokens, Unicode and source line end
   fs.writeFileSync(f.focus, reader);
   fs.writeFileSync(f.reader, reader);
   assert.equal(f.run().status, 0);
-  assert.equal(fs.readFileSync(f.output, 'utf8'), `<script>\r\n${reader}${reader}${reader}${reader}${reader}${reader}${reader}${reader}${reader}${reader}${reader}${reader}${reader}</script>\n`);
+  const grid = fs.readFileSync(path.join(repoRoot, 'archify/renderers/shared/svg-grid.mjs'), 'utf8').replace('export function', 'function');
+  const wrappedLayout = `Archify.intervalLayout = (function () {\n${grid}\n${layout.replace('export function renderIntervalLayout', 'function renderIntervalLayout').replaceAll('<svg', '\\x3csvg')}\nreturn renderIntervalLayout;\n})();`;
+  const wrappedValidator = `Archify.validateInterval = (function () {\n${validator}\nreturn validateInterval;\n})();`;
+  assert.equal(fs.readFileSync(f.output, 'utf8'), `<script>\r\n${wrappedLayout}${wrappedValidator}${reader}${reader.repeat(13)}</script>\n`);
   assert.equal(f.run('--check').status, 0);
 });
 

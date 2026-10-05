@@ -32,6 +32,7 @@ test('validator freshness check accepts CRLF checkouts', () => {
   try {
     fs.mkdirSync(path.join(scratch, 'scripts'));
     fs.mkdirSync(path.join(scratch, 'renderers', 'shared'), { recursive: true });
+    fs.mkdirSync(path.join(scratch, 'renderers', 'interval'), { recursive: true });
     fs.cpSync(path.join(skillRoot, 'schemas'), path.join(scratch, 'schemas'), { recursive: true });
     fs.copyFileSync(
       path.join(skillRoot, 'scripts', 'generate-validators.mjs'),
@@ -45,6 +46,14 @@ test('validator freshness check accepts CRLF checkouts', () => {
     fs.writeFileSync(
       path.join(scratch, 'renderers', 'shared', 'generated-validators.mjs'),
       validator.replace(/\r\n?|\n/g, '\r\n'),
+    );
+    const intervalValidator = fs.readFileSync(
+      path.join(skillRoot, 'renderers', 'interval', 'interval-validator.js'),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(scratch, 'renderers', 'interval', 'interval-validator.js'),
+      intervalValidator.replace(/\r\n?|\n/g, '\r\n'),
     );
 
     const result = spawnSync(process.execPath, [

@@ -10,10 +10,14 @@ and legend previews, `route-probe.js` for directed paths and Route Journey,
 `focus.js` for semantic selection, relationships, reachability and shared flow tokens,
 `export.js` for export menus, serialization, images, cards, clipboard and WebM,
 `export-cleanup.js` for its private SVG clone cleanup, and
+`interval-editor.js` for interval JSON and plot editing, and
 `template.source.html` for the rest of the Viewer.
 `archify/assets/template.html` is the committed
-generated artifact, consumed unchanged by all five renderers and the installed
+generated artifact, consumed unchanged by the renderers and the installed
 Skill. These maintainer sources live outside the packaged `archify/` directory.
+The generator also embeds the interval layout and generated validator from
+`archify/renderers/interval/` for browser editing; edit their authoritative
+sources rather than the generated template.
 
 From `archify/`, run `npm run generate:viewer` after editing any source.
 `npm run check:viewer` verifies freshness without writing; `npm test` includes

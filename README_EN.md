@@ -1,3 +1,5 @@
+> **Tracks fork:** This fork adds aligned Tracks diagrams (`interval`) to Archify. Use Tracks when position, length, overlap, or alignment across lanes matters: timing, concurrent activity, memory/storage layouts, or multiple segmentations of one range. State whether X means measured time, addresses/indices, or illustrative order. Use sequence diagrams for messages and workflows for process branches. Start with the [Tracks setup and usage guide](TRACKS.md) and [authoring reference](archify/references/interval-tracks.md). This is a development fork; the new type is not yet accepted upstream.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/archify-lockup-dark.svg" />
@@ -409,6 +411,10 @@ Connect with other users and developers, share ideas, request features, report b
 ## Contributing
 
 Issues, pull requests, and real-world diagrams are welcome. Start with the [contribution guide](CONTRIBUTING.md), use the reproducible bug form for failures, or submit a validated diagram through the [community showcase form](https://github.com/tt-a1i/archify/issues/new?template=showcase.yml).&nbsp;·&nbsp;[LINUX&nbsp;DO](https://linux.do)
+
+## Interval tracks
+
+Use `interval` for stacked segmentations of a shared numeric axis. Read the [interval guide](archify/references/interval-tracks.md) for its schema, standard validation, and JSON editor.
 
 ## Star History
 

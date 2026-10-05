@@ -66,7 +66,8 @@ function assertFriendlyFailure(mode, doc, label) {
   assert.notEqual(code, 0, `${label}: expected non-zero exit`);
   assert.doesNotMatch(stderr, /TypeError|RangeError|is not a function|Cannot read/,
     `${label}: crashed instead of reporting friendly error:\n${stderr}`);
-  assert.doesNotMatch(html, /NaN|undefined/, `${label}: wrote NaN/undefined into HTML`);
+  assert.doesNotMatch(html.match(/<svg\b[\s\S]*?<\/svg>/)?.[0] || '', /NaN|undefined/,
+    `${label}: wrote NaN/undefined into SVG`);
 }
 
 // ---- type-wrong-but-JSON-legal documents per mode ----
@@ -131,7 +132,9 @@ test('property: shuffling node/state order still renders (order-independence)', 
       }
       const { code, html } = render(mode, doc);
       assert.equal(code, 0, `${mode} seed ${seed}: valid shuffle should render (exit 0)`);
-      assert.doesNotMatch(html, /NaN|undefined>/, `${mode} seed ${seed}: NaN in output`);
+      const svg = html.match(/<svg\b[\s\S]*?<\/svg>/)?.[0];
+      assert.ok(svg, `${mode} seed ${seed}: rendered SVG missing`);
+      assert.doesNotMatch(svg, /NaN|undefined>/, `${mode} seed ${seed}: NaN in SVG`);
     }
   }
 });

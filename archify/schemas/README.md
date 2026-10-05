@@ -12,6 +12,7 @@ against one of the schemas in this folder before any layout work happens.
 | `dataflow.schema.json` | `diagram_type: "dataflow"` | `stages`, `nodes`, `flows` |
 | `lifecycle.schema.json` | `diagram_type: "lifecycle"` | `lanes`, `states`, `transitions` |
 | `architecture.schema.json` | `diagram_type: "architecture"` | `components`, `boundaries`, `connections` |
+| `interval.schema.json` | `diagram_type: "interval"` | `tracks` |
 | `common.schema.json` | shared `$defs` only (no top-level document) | — |
 
 Every diagram schema requires `schema_version`, `diagram_type`, `meta` (with
@@ -19,7 +20,7 @@ Every diagram schema requires `schema_version`, `diagram_type`, `meta` (with
 `cards`, which are optional — and sets `additionalProperties: false` at every
 level, so unknown fields are rejected rather than silently ignored.
 
-Every `meta` object also accepts `animation: "trace"` for opt-in SVG/CSS motion
+Graph-diagram `meta` objects also accept `animation: "trace"` for opt-in SVG/CSS motion
 in generated HTML. Omit it, or set `"none"`, for the default static output.
 It also accepts `locale: "en" | "zh-CN"`. The field selects the fixed Viewer
 UI, renderer-owned default legend and accessibility copy, document-title
@@ -38,13 +39,13 @@ diagram renders at the same coordinates no matter how wide its viewBox is.
 wide canvas into column distance and label room rather than empty space on the
 right. Lane order, IDs, and message semantics are unchanged either way.
 
-It may also include up to five guided `views`. Each view has a unique `id`, a
+Graph-diagram metadata may also include up to five guided `views`. Each view has a unique `id`, a
 reader-facing `label`, a non-empty `focus` list of existing semantic node IDs,
 and an optional short `note`.
 
 ### Legend presentation contract
 
-Every `meta` object accepts the same optional legend shape without changing
+Graph-diagram `meta` objects accept the same optional legend shape without changing
 the schema version already selected for that renderer:
 
 ```json
@@ -209,3 +210,7 @@ workflow schema validation failed:
 
 Schemas catch shape errors (types, enums, ranges, unknown fields); geometry
 problems such as overlaps and label collisions are the renderers' job.
+
+## Interval tracks
+
+The interval family shares numeric positions across stacked tracks. Its metadata supports title, subtitle, locale, output, visual preset, and standard quality. Graph animation, guided views, and graph legends do not apply. See [Interval tracks](../references/interval-tracks.md) for rendering, editing, and overflow rules.

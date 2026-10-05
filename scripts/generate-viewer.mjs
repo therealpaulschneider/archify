@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'archify/assets/template.html');
 const fragments = [
+  ['/* ARCHIFY:INTERVAL_LAYOUT */', '../archify/renderers/interval/interval-layout.mjs'],
+  ['/* ARCHIFY:INTERVAL_VALIDATOR */', '../archify/renderers/interval/interval-validator.js'],
+  ['/* ARCHIFY:INTERVAL_EDITOR */', 'interval-editor.js'],
   ['/* ARCHIFY:EXPORT */', 'export.js'],
   ['/* ARCHIFY:READER_LAYOUT */', 'reader-layout.js'],
   ['/* ARCHIFY:CHROME_LAYOUT */', 'viewer-chrome-layout.js'],
@@ -29,7 +32,19 @@ try {
   }
   let generated = fs.readFileSync(path.join(root, 'viewer/template.source.html'), 'utf8');
   for (const [marker, filename] of fragments) {
-    const source = fs.readFileSync(path.join(root, 'viewer', filename), 'utf8');
+    let source = fs.readFileSync(path.join(root, 'viewer', filename), 'utf8');
+    if (filename.endsWith('/interval-layout.mjs')) {
+      const grid = fs.readFileSync(path.join(root, 'archify/renderers/shared/svg-grid.mjs'), 'utf8').replace('export function', 'function');
+      source = grid + '\n' + source.replace("import { renderGridPattern } from '../shared/svg-grid.mjs';\n", '');
+      const exportLine = 'export function renderIntervalLayout';
+      if (source.split(exportLine).length !== 2) throw new Error('Interval layout export changed.');
+      source = source.replace(exportLine, 'function renderIntervalLayout')
+        .replaceAll('<svg', '\\x3csvg').replaceAll('</svg>', '\\x3c/svg>');
+      source = `Archify.intervalLayout = (function () {\n${source}\nreturn renderIntervalLayout;\n})();`;
+    } else if (filename.endsWith('/interval-validator.js')) {
+      if (!source.includes('const validateInterval =')) throw new Error('Interval validator export changed.');
+      source = `Archify.validateInterval = (function () {\n${source}\nreturn validateInterval;\n})();`;
+    }
     const parts = generated.split(marker);
     if (parts.length !== 2) throw new Error(`Viewer source must contain exactly one ${filename} marker.`);
     // Export owns the sole nested fragment; expand it before Cleanup.

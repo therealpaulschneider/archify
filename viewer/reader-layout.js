@@ -8,6 +8,7 @@
       var guided = shell && shell.querySelector('.guided-views');
       var cards = shell && shell.querySelector('.cards');
       var viewBox = svg && svg.viewBox && svg.viewBox.baseVal;
+      var interval = svg && svg.getAttribute('data-diagram-type') === 'interval';
       var ratio = viewBox && viewBox.height > 0 ? viewBox.width / viewBox.height : 0;
       var frame = 0;
       var settleFrame = 0;
@@ -37,7 +38,7 @@
       }
       function eligible() {
         return Boolean(
-          shell && diagram && svg && ratio >= WIDE_RATIO &&
+          shell && diagram && svg && (interval || ratio >= WIDE_RATIO) &&
           window.innerWidth >= MIN_DESKTOP_WIDTH &&
           html.getAttribute('data-embed') !== 'true' &&
           html.getAttribute('data-present') !== 'true' &&
@@ -97,9 +98,16 @@
         }
         var chrome = chromeMetrics();
         var viewportCap = Math.max(0, window.innerWidth - chrome.bodyX);
-        var minWidth = Math.min(MIN_READER_WIDTH, viewportCap);
+        // Tracks may be taller than graph diagrams. Fit while preserving a 14px
+        // projected label floor; very tall datasets remain honest scrolling pages.
+        var minimum = interval ? Math.max(600, viewBox.width * 14 / 20 + chrome.diagramX) : MIN_READER_WIDTH;
+        var minWidth = Math.min(minimum, viewportCap);
         var maxWidth = Math.min(MAX_READER_WIDTH, viewportCap);
-        var fixedHeight = chrome.bodyY + chrome.diagramY + SAFE_BOTTOM_GAP +
+        // Include in-flow viewer content below the SVG (such as the interval editor).
+        // Padding alone undercounts it and makes measure/settleOverflow oscillate.
+        var diagramOverhead = Math.max(chrome.diagramY,
+          diagram.getBoundingClientRect().height - svg.getBoundingClientRect().height);
+        var fixedHeight = chrome.bodyY + diagramOverhead + SAFE_BOTTOM_GAP +
           outerHeight(header) + outerHeight(guided) + outerHeight(cards);
         var availableSvgHeight = Math.max(1, window.innerHeight - fixedHeight);
         var desiredWidth = availableSvgHeight * ratio + chrome.diagramX;

@@ -1,6 +1,6 @@
 ---
 name: archify
-description: Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.
+description: Create polished, validated architecture, workflow, sequence, data-flow, lifecycle/state diagrams, and shared-axis interval tracks as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, aligned timelines, memory/storage ranges, stacked interval tracks, or to convert/beautify Mermaid.
 license: MIT
 metadata:
   version: "2.17"
@@ -14,7 +14,11 @@ Create a self-contained, interactive HTML diagram from a small typed JSON specif
 
 ## Fast authoring path
 
-Use this bounded path for ordinary generation. Do not read the optional Viewer Runtime reference unless the user asks about those features.
+Choose **Tracks** (`diagram_type: "interval"`, CLI type `interval`) when position, length, overlap, or alignment across lanes carries meaning: timing diagrams, concurrent activity, memory/storage layouts, or multiple segmentations of one range. Every track shares one X axis. Use `sequence` for participant message order and `workflow` for process branches. State whether X represents measured time, addresses/indices, or illustrative execution order; order alone does not establish elapsed time.
+
+Before authoring Tracks, read [Tracks authoring reference](references/interval-tracks.md) for its schema/example links, standard-only validation, label placement, arrow labels, horizontal density, and editing workflow. Begin with factual coordinates and automatic label placement; inspect ownership in the rendered artifact before using manual offsets. The graph authoring path below does not apply to Tracks.
+
+Use this bounded path for ordinary graph generation. Do not read the optional Viewer Runtime reference unless the user asks about those features.
 
 1. Choose `architecture`, `workflow`, `sequence`, `dataflow`, or `lifecycle` from the question.
 2. Read one matching schema in `schemas/`, `schemas/common.schema.json`, and one matching JSON example in `examples/`. Read only those files. Fresh authorship means new stable IDs, domain wording, and layout; use the example for field shape, not facts. New workflow sources use `schema_version: 2` and its readable layout contract; keep `schema_version: 1` only when preserving an existing workflow's fixed geometry. When real product identity matters, query `node bin/archify.mjs brands "<name>" --json`; read `references/brand-marks.md` only for an unknown brand with a user-provided URL.
@@ -61,6 +65,7 @@ Lifecycle note: phase columns `0..4` occupy the main rail; event/terminal column
 | `sequence` | API call chains, request lifecycles, async traces, returns |
 | `dataflow` | Pipelines, ETL/ELT, lineage, governance, consumers |
 | `lifecycle` | State/status transitions, retries, waiting and terminal states |
+| `interval` | Numeric ranges and stacked segmentations sharing one coordinate axis |
 
 When ambiguous, run `node bin/archify.mjs guide "<scenario>" --json`. Scenario proof examples are structural references, not facts to copy.
 

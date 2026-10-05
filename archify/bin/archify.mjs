@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(__dirname, '..');
 
-const TYPES = new Set(['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle']);
+const TYPES = new Set(['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle', 'interval']);
 
 function usage() {
   return `Usage:
@@ -31,7 +31,7 @@ function usage() {
   archify demo [output-directory]
 
 Types:
-  architecture, workflow, sequence, dataflow, lifecycle
+  architecture, workflow, sequence, dataflow, lifecycle, interval
 `;
 }
 
@@ -851,6 +851,20 @@ function sourceEvidenceFromArtifact(artifact) {
   return evidence;
 }
 
+function intervalDiagnosticsFromArtifact(artifact) {
+  const match = artifact.toString('utf8').match(/<script id="archify-interval-data" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!match) return [];
+  const data = JSON.parse(match[1]);
+  return (data.warnings || []).map((message) => diagnostic({
+    code: 'interval/layout-warning',
+    severity: 'warning',
+    message,
+    subject: { diagramType: 'interval', path: '/tracks' },
+    evidence: { reason: message },
+    supportedFixes: ['inspect the named annotation or interval; adjust its explicit geometry if the overflow or overlap is unintended'],
+  }));
+}
+
 function engineeringProfileFromArtifact(artifact) {
   const match = artifact.toString('utf8').match(/<svg[^>]*\sdata-engineering-profile="([^"]+)"/);
   return match ? match[1] : null;
@@ -1132,8 +1146,9 @@ async function commandDeliver(args) {
         compositionStatus: result.composition.status,
         ...(engineeringProfile ? { engineeringProfile } : {}),
         errors: result.composition.summary.errors,
-        warnings: result.composition.summary.warnings,
+        warnings: result.composition.summary.warnings + intervalDiagnosticsFromArtifact(artifact).length,
       },
+      ...(type === 'interval' ? { diagnostics: intervalDiagnosticsFromArtifact(artifact) } : {}),
       ...(sourceEvidence ? {
         evidence: {
           verified: true,
@@ -1435,6 +1450,7 @@ async function commandDoctor(args) {
     sequence: 'cache-miss-request.sequence.json',
     dataflow: 'product-analytics.dataflow.json',
     lifecycle: 'agent-run.lifecycle.json',
+    interval: 'storage.interval.json',
   };
 
   for (const type of TYPES) {
@@ -2044,7 +2060,9 @@ function commandValidate(args) {
         exitCode = check.status ?? 1;
       } else {
         const result = JSON.parse(check.stdout);
-        const engineeringProfile = engineeringProfileFromArtifact(fs.readFileSync(out));
+        const renderedArtifact = fs.readFileSync(out);
+        const engineeringProfile = engineeringProfileFromArtifact(renderedArtifact);
+        const intervalDiagnostics = intervalDiagnosticsFromArtifact(renderedArtifact);
         if (json) {
           console.log(JSON.stringify({
             schemaVersion: 1,
@@ -2054,12 +2072,14 @@ function commandValidate(args) {
             input: path.resolve(input),
             checks: result.checks,
             composition: result.composition,
+            ...(type === 'interval' ? { diagnostics: intervalDiagnostics } : {}),
             ...(engineeringProfile ? { engineeringProfile } : {}),
           }, null, 2));
         } else {
           const engineering = engineeringProfile
             ? `; engineering ${engineeringProfile}: pass`
             : '';
+          for (const entry of intervalDiagnostics) console.warn(`[${entry.code}] ${entry.message}`);
           console.log(`ok ${type} ${path.resolve(input)} (${result.checks.length} artifact checks; composition ${result.composition.profile}: ${result.composition.summary.errors} errors, ${result.composition.summary.warnings} warnings${engineering})`);
         }
       }
