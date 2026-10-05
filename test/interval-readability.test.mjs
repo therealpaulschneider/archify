@@ -48,3 +48,12 @@ test("Tracks measures wide glyphs using upstream text units", () => {
   const origin = result => Number(result.svg.match(/data-x-origin="([^"]+)"/)[1]);
   assert.ok(origin(wide) > origin(ascii));
 });
+
+test('peer point captions with authored baseline differences report an association warning', () => {
+  const result = renderIntervalLayout({ unitWidth: 100, tracks: [{ id: 'probes',
+    points: [{ at: 10, label: 'First', labelOffset: [0, -8] },
+      { at: 70, label: 'Second', labelOffset: [0, 8] }, { at: 95 }] }] });
+  assert.ok(result.warnings.some(w => w.includes('different authored Y offsets')));
+  assert.match(result.svg, /data-layout-offset="\[0,-8\]"/);
+  assert.match(result.svg, /data-layout-offset="\[0,8\]"/);
+});

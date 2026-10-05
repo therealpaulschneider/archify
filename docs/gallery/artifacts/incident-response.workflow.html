@@ -6339,6 +6339,12 @@ function renderIntervalLayout(spec) {
         ` data-edit-from-path="${esc(JSON.stringify([...editPath, 'from']))}" data-edit-to-path="${esc(JSON.stringify([...editPath, 'to']))}"`,
       );
     }
+    // Explicit offsets stay authoritative, but peer captions need an ownership check
+    // even when their text boxes do not collide.
+    const pointBaselines = new Set((row.points || []).map(point => labelOffset(point)[1]));
+    if (pointBaselines.size > 1) {
+      warnings.push(`${row.id}/points: peer captions use different authored Y offsets (${[...pointBaselines].join(', ')}). Omit offsets for a shared baseline; use start-attached labelled arrows for independent callouts, or retain intentional offsets after checking ownership.`);
+    }
     for (const [j, item] of (row.points || []).entries()) {
       const editPath = ['tracks', ri, 'points', j],
         z = item.z ?? 30;
